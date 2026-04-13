@@ -65,7 +65,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete task?'),
-        content: const Text('This action cannot be undone.'),
+        content: const Text('Are you sure you want to delete this task?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -80,12 +80,14 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       ),
     );
 
+    if (!mounted) return;
+
     if (shouldDelete != true) return;
 
     await ref.read(taskStateProvider.notifier).deleteTask(_currentTask.id);
     if (!mounted) return;
 
-    final error = ref.read(taskErrorProvider);
+    final error = ref.read(taskStateProvider).error;
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error)),
@@ -93,14 +95,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Task deleted')),
-    );
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const TaskListScreen()),
-      (route) => false,
-    );
+   Navigator.pop(context, true);
   }
 
   @override

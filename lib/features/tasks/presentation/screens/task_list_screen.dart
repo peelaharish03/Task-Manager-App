@@ -41,10 +41,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         child: isLoading && tasks.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : error != null
-                ? _buildErrorWidget(error)
-                : tasks.isEmpty
-                    ? _buildEmptyState()
-                    : _buildTaskList(tasks),
+            ? _buildErrorWidget(error)
+            : tasks.isEmpty
+            ? _buildEmptyState()
+            : _buildTaskList(tasks),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -82,7 +82,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => ref.read(taskStateProvider.notifier).refreshTasks(),
+              onPressed: () =>
+                  ref.read(taskStateProvider.notifier).refreshTasks(),
               child: const Text('Try Again'),
             ),
           ],
@@ -120,7 +121,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const AddTaskScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.add),
@@ -164,7 +167,7 @@ class TaskCard extends ConsumerWidget {
           task.title,
           style: TextStyle(
             decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            color: task.isCompleted 
+            color: task.isCompleted
                 ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                 : null,
           ),
@@ -175,19 +178,25 @@ class TaskCard extends ConsumerWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
                 ),
               )
             : null,
         trailing: PopupMenuButton<String>(
-          onSelected: (value) {
+          onSelected: (value) async {
             switch (value) {
               case 'view':
-                Navigator.of(context).push(
+                final result = await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => TaskDetailScreen(task: task),
                   ),
                 );
+
+                if (result == true) {
+                  ref.read(taskStateProvider.notifier).refreshTasks();
+                }
                 break;
               case 'delete':
                 _showDeleteConfirmation(context, ref);
@@ -217,12 +226,16 @@ class TaskCard extends ConsumerWidget {
             ),
           ],
         ),
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => TaskDetailScreen(task: task),
             ),
           );
+
+          if (result == true) {
+            ref.read(taskStateProvider.notifier).refreshTasks();
+          }
         },
       ),
     );

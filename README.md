@@ -1,6 +1,6 @@
 # Task Manager App
 
-A clean and modern Flutter task management application with user authentication and real-time data synchronization using Supabase.
+A clean and modern Flutter task management application with user authentication and real-time data synchronization using Firebase Authentication and Cloud Firestore.
 
 ## Features
 
@@ -53,17 +53,16 @@ lib/
 |-- shared/                # Shared widgets and utilities
 ```
 
-## Backend Choice: Supabase
+## Backend Choice: Firebase
 
-I chose Supabase as the backend for several reasons:
+I chose Firebase as the backend for several reasons:
 
-1. **All-in-one Solution**: Provides authentication, database, and real-time features in a single platform
-2. **PostgreSQL**: Uses a robust, scalable database
-3. **Built-in Authentication**: Secure email/password authentication with session management
-4. **Real-time Support**: Automatic real-time updates for task synchronization
-5. **Row Level Security**: Built-in security policies for user data isolation
-6. **Free Tier**: Generous free plan for development and small projects
-7. **Easy Setup**: Quick configuration without complex infrastructure management
+1. **Tight Flutter integration**: First-party SDKs and tooling for Flutter
+2. **Authentication**: Email/password auth with session persistence
+3. **Cloud Firestore**: Scalable document database with real-time streams
+4. **Real-time updates**: Task list stays in sync automatically
+5. **Simple client architecture**: Works cleanly with repository + use case patterns
+6. **Great developer experience**: Fast iteration, good emulator/tooling support
 
 ## Setup Instructions
 
@@ -71,7 +70,7 @@ I chose Supabase as the backend for several reasons:
 
 - Flutter SDK (>= 3.10.0)
 - Dart SDK (>= 3.0.0)
-- A Supabase account
+- A Firebase project
 
 ### 1. Clone and Install Dependencies
 
@@ -81,61 +80,56 @@ cd task_manager_app
 flutter pub get
 ```
 
-### 2. Supabase Setup
+### 2. Firebase Setup
 
-1. **Create a Supabase Project**
-   - Go to [supabase.com](https://supabase.com)
+1. **Create a Firebase project**
+   - Go to https://console.firebase.google.com
    - Create a new project
-   - Wait for the project to be ready
 
-2. **Get Supabase Credentials**
-   - Go to Project Settings > API
-   - Copy the Project URL and anon public key
+2. **Enable Email/Password auth**
+   - Firebase Console → Authentication → Sign-in method → enable Email/Password
 
-3. **Configure the Database**
-   - Go to the SQL Editor in Supabase
-   - Run the following SQL to create the tasks table:
+3. **Create Firestore database**
+   - Firebase Console → Firestore Database → Create database
 
-```sql
--- Create tasks table
-CREATE TABLE tasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  is_completed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+4. **Configure the Flutter app**
+   - Install FlutterFire CLI and configure:
 
--- Enable Row Level Security
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-
--- Create RLS policies
-CREATE POLICY "Users can view their own tasks" ON tasks
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own tasks" ON tasks
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own tasks" ON tasks
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own tasks" ON tasks
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create index for better performance
-CREATE INDEX idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX idx_tasks_created_at ON tasks(created_at);
+```bash
+dart pub global activate flutterfire_cli
+flutterfire configure
 ```
 
-4. **Update App Configuration**
-   - Open `lib/core/constants/app_constants.dart`
-   - Replace the placeholder Supabase URL and anon key with your actual credentials:
+This generates/updates `lib/firebase_options.dart` and platform config files (e.g. `android/app/google-services.json`).
 
-```dart
-static const String supabaseUrl = 'https://your-project-id.supabase.co';
-static const String supabaseAnonKey = 'your-anon-key-here';
+5. **Firestore data model**
+
+Tasks are stored under the `tasks` collection with these fields:
+
+- `id` (string)
+- `title` (string)
+- `description` (string)
+- `is_completed` (bool)
+- `created_at` (timestamp)
+- `updated_at` (timestamp, optional)
+- `user_id` (string)
+
+6. **Firestore security rules (recommended)**
+
+Use rules that restrict tasks to the authenticated user:
+
+```txt
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null &&
+        request.resource.data.user_id == request.auth.uid;
+      allow read: if request.auth != null &&
+        resource.data.user_id == request.auth.uid;
+    }
+  }
+}
 ```
 
 ### 3. Run the App
@@ -178,7 +172,8 @@ If you encounter the "not enough space" error on Android:
 
 - **Flutter**: Cross-platform UI framework
 - **Riverpod**: State management solution
-- **Supabase**: Backend-as-a-Service platform
+- **Firebase Auth**: Authentication backend
+- **Cloud Firestore**: Database + realtime updates
 - **Go Router**: Navigation and routing
 - **Material 3**: Modern design system
 
@@ -238,7 +233,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 For issues and questions:
 - Create an issue on GitHub
 - Check the troubleshooting section
-- Review the Supabase documentation
+- Review the Firebase documentation
 
 ## Future Enhancements
 

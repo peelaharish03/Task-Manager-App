@@ -154,22 +154,31 @@ class TaskCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final completed = task.isCompleted;
+
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      elevation: completed ? 1 : 4,
+      color: completed ? Colors.grey.shade300 : null,
+      shadowColor: scheme.shadow.withOpacity(0.12),
+      surfaceTintColor: Colors.transparent,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: completed
+            ? BorderSide(color: Colors.grey.shade400, width: 1)
+            : BorderSide.none,
+      ),
       child: ListTile(
-        leading: Checkbox(
-          value: task.isCompleted,
-          onChanged: (value) {
-            ref.read(taskStateProvider.notifier).toggleTaskCompletion(task);
-          },
-        ),
+        enabled: true,
+        iconColor: completed
+            ? scheme.onSurface.withOpacity(0.45)
+            : scheme.onSurface.withOpacity(0.8),
         title: Text(
           task.title,
           style: TextStyle(
             decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            color: task.isCompleted
-                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                : null,
+            color: completed ? scheme.onSurface.withOpacity(0.55) : null,
           ),
         ),
         subtitle: task.description.isNotEmpty
@@ -178,51 +187,62 @@ class TaskCard extends ConsumerWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
+                  color: completed
+                      ? scheme.onSurface.withOpacity(0.45)
+                      : scheme.onSurface.withOpacity(0.7),
                 ),
               )
             : null,
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            switch (value) {
-              case 'view':
-                final result = await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => TaskDetailScreen(task: task),
-                  ),
-                );
-
-                if (result == true) {
-                  ref.read(taskStateProvider.notifier).refreshTasks();
-                }
-                break;
-              case 'delete':
-                _showDeleteConfirmation(context, ref);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view',
-              child: Row(
-                children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('View Details'),
-                ],
-              ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Switch(
+              value: task.isCompleted,
+              onChanged: (_) {
+                ref.read(taskStateProvider.notifier).toggleTaskCompletion(task);
+              },
             ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
-                ],
-              ),
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'view':
+                    final result = await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => TaskDetailScreen(task: task),
+                      ),
+                    );
+
+                    if (result == true) {
+                      ref.read(taskStateProvider.notifier).refreshTasks();
+                    }
+                    break;
+                  case 'delete':
+                    _showDeleteConfirmation(context, ref);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'view',
+                  child: Row(
+                    children: [
+                      Icon(Icons.visibility),
+                      SizedBox(width: 8),
+                      Text('View Details'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
